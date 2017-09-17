@@ -1,0 +1,261 @@
+#include "NXCDefs.h"
+
+#define stateA      0
+#define stateB      1
+#define stateC      2
+#define stateD      3
+
+#define LBlack 36
+#define Yellowgreen 40
+#define Greenleft 34
+#define Greenright 31
+#define CBlackleft 33
+#define CBlackright 30
+#define Center 34
+#define White 53
+#define reach 20
+#define TouchSensor SENSOR_1
+#define LightSensorLeft SENSOR_2
+#deinfe LightSensorRight SENSOR_3
+#define UltrasonicSensor SensorUS(IN_4)
+
+#define Fwd   OnRev(OUT_AC,100);
+#define Left  OnRev(OUT_C,100); OnFwd(OUT_A,50);
+#define Right OnRev(OUT_A,100); OnFwd(OUT_C,50);
+#define Rev   OnFwd(OUT_AC,100);
+
+
+
+int next_state =0;
+int arr[5]={0};
+int i,x=0;
+
+
+void foward_A()
+{
+	     while(true){
+
+               Fwd;
+               
+             /*if(LightSensorLeft<=LBlack && LightSensorRight<=LBlack){
+		            Fwd;
+		            Wait(50);
+	              }
+ 	           else if(LightSensorLeft<=LBlack &&LightSensorRight>=White){
+                //오른쪽 센서가 하얀색(좌로 이동)
+		            OnRev(OUT_A,10);
+		            OnRev(OUT_C,80);
+		            }
+	           else if(LightSensorLeft>=White &&LightSensorRight<=LBlack){
+  		          //왼쪽 센서가 하얀색(우로 이동)
+	 	            OnRev(OUT_A,80);
+		            OnRev(OUT_C,10);
+		            }*/
+
+
+             if(TouchSensor==1)
+                break;
+
+             }
+}
+
+void foward_C()
+{
+	     while(true){
+             if(LightSensorLeft<=LBlack && LightSensorRight<=LBlack){
+		            Fwd;
+		            Wait(50);
+	              }
+ 	           else if(LightSensorLeft<=LBlack &&LightSensorRight>=White){
+                //오른쪽 센서가 하얀색(좌로 이동)
+		            OnRev(OUT_A,10);
+		            OnRev(OUT_C,70);
+		            }
+	           else if(LightSensorLeft>=White &&LightSensorRight<=LBlack){
+  		          //왼쪽 센서가 하얀색(우로 이동)
+	 	            OnRev(OUT_A,70);
+		            OnRev(OUT_C,10);
+		            }
+             else if((LightSensorLeft>=Yellowgreen && LightSensorLeft<=White) && (LightSensorRight>=Yellowgreen && LightSensorRight<=White))
+                break;
+
+             }
+}
+
+
+void get_around_obstacle()
+{
+       Rev;
+       Wait(400);
+       Right;
+       Wait(500);
+       Fwd;
+       Wait(500);
+       Left;
+       Wait(500);
+       Fwd;
+       Wait(500);
+       Left;
+       Wait(500);
+
+       while(true){
+             if(LightSensorLeft<=LBlack && LightSensorRight<=LBlack){
+	              Right;
+	              Wait(300);
+	              break;
+	              }
+
+	           else
+                Fwd;
+
+	           }
+
+       foward_C();
+}
+
+void go_into_center()
+{
+       Off(OUT_AC);
+       OnRev(OUT_B,100);
+       Wait(1000);
+       Off(OUT_B);
+       Fwd;
+       while(true){
+             if((LightSensorLeft>=Yellowgreen && LightSensorLeft<=White) && (LightSensorRight>=Yellowgreen && LightSensorRight<=White)){
+                Fwd;
+                Wait(20);
+                }
+
+             else if(LightSensorLeft<=Center && LightSensorRight<=Center){
+                Fwd;
+                Wait(530);
+                Off(OUT_AC);
+	              break;
+                }
+
+             }
+}
+
+void find_location()
+{
+       while(true){
+             if((LightSensorLeft>=White && LightSensorRight>=White)||(LightSensorLeft>=White && LightSensorRight<=LBlack)||(LightSensorLeft<=LBlack && LightSensorRight>=White)){
+                Rev;
+                until(LightSensorLeft<=Center && LightSensorRight<=Center);
+                Off(OUT_AC);
+                break;
+                }
+             else if((LightSensorLeft>=Yellowgreen && LightSensorLeft<White)&&(LightSensorRight>=Yellowgreen && LightSensorRight<White)){
+                Rev;
+                Wait(100);
+                }
+             else if(LightSensorLeft<=Center && LightSensorRight<=Center)
+                break;
+
+             }
+}
+
+void attack()
+{
+       while(true){
+             if(LightSensorLeft<White && LightSensorRight<White){
+
+                if((x/5)<reach){
+                   Fwd;
+                   Wait(50);
+                   }
+                else{
+                   Off(OUT_AC);
+                   break;
+                   }
+                }
+             else
+                break;
+             }
+       Off(OUT_AC);
+       find_location();
+}
+
+void defence_mode()
+{
+       while(LightSensorLeft>=Yellowgreen  && LightSensorRight>=Yellowgreen){
+
+             if(LightSensorLeft>White && LightSensorRight>White){
+                Left;
+                Wait(200);
+                Fwd;
+                Wait(200);
+                Right;
+                Wait(300);
+                Fwd;
+                until(LightSensorLeft<=Center && LightSensorRight<=Center);
+                }
+             else if((LightSensorLeft>=Yellowgreen && LightSensorLeft<White) && (LightSensorRight>=Yellowgreen && LightSensorRight<White)){
+                Fwd;
+                Wait(100);
+	              }
+             }
+}
+
+void at_center()
+{
+             if(LightSensorLeft<=Center && LightSensorRight<=Center){
+                Off(OUT_AC);
+
+                x=0;
+                for(i=0;i<5;i++){
+                    arr[i]=UltrasonicSensor
+                    x=x+arr[i];
+                    }
+                if((x/5)<reach)
+	                  attack();
+	              }
+             else
+                find_location();
+}
+
+
+task main()
+{
+       SetSensorTouch(IN_1);
+       SetSensorLight(IN_2);
+       SetSensorLight(IN_3);
+       SetSensorLowspeed(IN_4);
+
+       while(true){
+             switch(next_state){
+
+                     case stateA:
+                           foward_A();
+                           next_state=stateB;
+                           break;
+
+                     case stateB:
+                           if(TouchSensor==1)
+                              get_around_obstacle();
+
+                           next_state=stateC;
+	                         break;
+
+
+                     case stateC:
+                           if(LightSensorLeft>=Yellowgreen && LightSensorLeft<=White && LightSensorRight>=Yellowgreen && LightSensorRight<=White)
+                              go_into_center();
+
+                           next_state=stateD;
+	                         break;
+
+
+                     case stateD:
+                           if(LightSensorLeft<=Center && LightSensorRight<=Center){
+                              at_center();
+	                            break;
+	                            }
+                           else{
+			                        defence_mode();
+			                        break;
+			                        }
+
+                     }
+             }
+}
